@@ -1,0 +1,144 @@
+this.dialog = null;            
+var hideEventName = this.context.options.hideEvent ? this.context.options.hideEvent.get("value") : "hideDialog";
+var showEventName = this.context.options.showEvent ? this.context.options.showEvent.get("value") : "showDialog";
+var hideCloseIcon = this.context.options.hideCloseIcon ? this.context.options.hideCloseIcon.get("value") : false;
+//if hideHeaderCloseButton is true then set closable as false
+var hideClose = hideCloseIcon == true ? false : true;
+
+/*if(!this.context.binding){
+    this.context.createView(this.context.element.firstElementChild);
+}*/
+
+        var params = {};
+                params = {
+                    "class": "bpmDashboardsDialog",
+                    "closable" : hideClose,
+                    "onExecute": lang.hitch(this, function(){
+                        //this.context.binding.set("value", false);
+                     }),
+                     "onCancel": lang.hitch(this, function(){
+                        //this.context.binding.set("value", false);
+                     }),
+                     "onClose": lang.hitch(this, function(){
+                        //this.context.binding.set("value", false);
+                     })
+                };
+
+                /*
+                 *  Movable Configuration Option
+                 */
+                //Making Default if unchecked then it is movable, User have to Check to make it static
+                var isMovable = this.context.options.moveable ? this.context.options.moveable.get("value") : false;
+                var movable = isMovable == false ? true : false;
+                params["draggable"] = movable;
+                
+                /*
+                 *  Modality Configuration Option
+                 */
+                var modality = false;
+                if( this.context.options && this.context.options.modality){
+                    modality = this.context.options.modality.get("value");
+                    if(modality){
+                        params["class"] += " nonModalDialog";
+                    }
+                }
+                
+                /*
+                 *  Title and Sub-title Configuration Options
+                 */
+            var title = this.context.options.title ? this.context.options.title.get("value")  : "";
+                
+                var subtitle = "";
+                if( this.context.options && this.context.options.subtitle){
+                    subtitle = this.context.options.subtitle.get("value");
+                }
+    
+                if(typeof(title)!="undefined" && title!="" && typeof(subtitle)!="undefined" && subtitle!=""){
+                    params["title"] = "<span class='dialogTitle'>"+title+"</span><span class='dialogSubtitle'>"+subtitle+"</span>";
+                    this.titleState = this.TITLE_AND_SUBTITLE;
+                } else if(typeof(title)!="undefined" && title!=""){
+                    params["title"] = "<span class='dialogTitle'>"+title+"</span>";
+                    this.titleState = this.TITLE_ONLY;
+                } else if(typeof(subtitle)!="undefined" && subtitle!=""){
+                    params["title"] = "<span class='dialogSubtitle'>"+subtitle+"</span>";
+                    this.titleState = this.SUBTITLE_ONLY;
+                } else {
+                    params["class"] += " noTitle";
+                    this.titleState = this.NO_TITLE;
+                }
+
+                /*
+                 *  Height and Width Configuration Options
+                 */
+                var height = this.context.options.height ? this.context.options.height.get("value") : "auto";            
+                var width = this.context.options.width ? this.context.options.width.get("value") : "auto";
+
+                params["height"] = height;
+                params["width"] = width;
+                
+                /*Get value to check whether to hide horizontal scroll bar in dialog                
+                */
+               var isHideScroll = this.context.options.hideHorizontalScroll ? this.context.options.hideHorizontalScroll.get("value") : false;
+
+            if(this.dialog==null){
+                /*
+                 *    Create Dialog based on processed Configuration Options
+                 */
+                 this.dialog = new Dialog(params);
+                 this.dialog.attr("content", this.context.element);
+    
+                 this.context.createView(this.context.element.firstElementChild);
+                 
+                 dijitDialogTitleBar = this.context.element.parentElement.previousElementSibling;
+                 //Add class to hide horizontal scroll bar
+                 if(isHideScroll){
+                     var dijitPaneCont = this.context.element.parentElement.parentElement;
+                 var dijPane = query(".dijitDialogPaneContent", dijitPaneCont)[0];
+                 domClass.add(dijPane,"paneContentOverrideOverflow");
+             }
+
+                 if(height != null && height !=  ""){ domStyle.set(this.context.element, "height", height); }
+                 if(width != null && width != ""){
+                     domStyle.set(this.context.element, "width", width);
+                      domStyle.set(dijitDialogTitleBar, "width", width);
+                 }
+                     
+                //Remove spans from the title attribute of 'dijitDialogTitleBar'
+                dijitDialogTitleBar.title = this.stripTags(dijitDialogTitleBar.title);
+            }
+            //Connect subscribe to show the Dialog
+        connect.subscribe(showEventName, this, function(message) {
+                this.dialog.show();
+        }); // End of connect.subscribe ...
+
+            
+            if(params["width"] && params["title"]){
+                 //Since 'width' is specified, we will need to ensure the full title is visible
+                 dijitDialogTitleBar = this.context.element.parentElement.previousElementSibling;
+                 
+                 var minh = 2;
+                 if(this.titleState == this.TITLE_ONLY || this.titleState == this.TITLE_AND_SUBTITLE){
+                     var title = query(".dialogTitle", dijitDialogTitleBar)[0];
+                     minh += title.clientHeight;
+                 } 
+                 if(this.titleState == this.SUBTITLE_ONLY || this.titleState == this.TITLE_AND_SUBTITLE){
+                     var subtitle = query(".dialogSubtitle", dijitDialogTitleBar)[0];
+                     minh += subtitle.clientHeight;
+                 }
+                 if(minh > 2){
+                    if(has("ie") && minh > dijitDialogTitleBar.clientHeight){
+                        domClass.add(dijitDialogTitleBar.firstElementChild,"wrappedTitle");
+                    }
+                    domStyle.set(dijitDialogTitleBar, "height", minh+"px");
+                 }
+
+            } else if(this.titleState != this.NO_TITLE) {
+                 //Check to see if the title or subtitle box is too big to display.  If so, 
+                 //extend the height to allow for display of the sub-elements.
+                 this.evalTitleHeight(this.titleStateChange);                
+            }
+//Connect subscribe to hide the Dialog
+connect.subscribe(hideEventName, this, function(message) {
+    this.dialog.hide();
+    //this.dialog.destroy();
+}); // End of connect.subscribe ...
