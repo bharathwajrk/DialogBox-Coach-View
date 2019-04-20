@@ -1,0 +1,58 @@
+var dijitDialogTitleBar = null;
+
+if (event.type != "config") {
+    //Handle all possible cases of changing Titles and Subtitles:
+    //1. Simple case - property exists and is being updated
+    //2. Property did not previously exist and is being created
+    //3. Property did exist and is being removed.
+    if(this.dialog!=null){
+                 dijitDialogTitleBar = this.context.element.parentElement.previousElementSibling;
+        if(event.property=="title"){
+                 if(this.titleState == this.TITLE_ONLY || this.titleState == this.TITLE_AND_SUBTITLE){
+                //A TITLE or (TITLE & SUBTITLE) node currently exist
+                     var title = query(".dialogTitle", dijitDialogTitleBar)[0];
+                if(!! title){
+                    if(event.newVal!=""){
+                        //Update the existing nodes HTML contents
+                        title.innerHTML = event.newVal;
+                    } else {
+                        //Destroy the existing node, as an empty string was passed
+                        domConstruct.destroy(title);
+                 } 
+                 }
+            } else if(this.titleState == this.SUBTITLE_ONLY && event.newVal!=""){
+                //Only a SUBTITLE node currently exists
+                var node = query(".dijitDialogTitle", dijitDialogTitleBar)[0];
+                domConstruct.create("span", {"class":"dialogTitle", "innerHTML":event.newVal}, node, "first");
+            } else if(this.titleState == this.NO_TITLE && event.newVal!="") {
+                //Neither a TITLE nor a SUBTITLE node exists
+                query(".dijitDialogTitle", dijitDialogTitleBar)[0].innerHTML = "<span class='dialogTitle'>"+event.newVal+"</span>";            
+                    }
+        } else if(event.property=="subtitle"){
+            if(this.titleState == this.SUBTITLE_ONLY || this.titleState == this.TITLE_AND_SUBTITLE){
+                //A SUBTITLE or (TITLE & SUBTITLE) node currently exist
+                var title = query(".dialogSubtitle", dijitDialogTitleBar)[0];
+                if(!! title){
+                    if(event.newVal!=""){
+                        //Update the existing nodes HTML contents
+                        title.innerHTML = event.newVal;
+                    } else {
+                        //Destroy the existing node, as an empty string was passed
+                        domConstruct.destroy(title);
+                 }
+            }
+            } else if(this.titleState == this.TITLE_ONLY && event.newVal!=""){
+                //Only a TITLE node currently exists
+                var node = query(".dijitDialogTitle", dijitDialogTitleBar)[0];
+                domConstruct.create("span", {"class":"dialogSubtitle", "innerHTML":event.newVal}, node, "last");
+            } else if(this.titleState == this.NO_TITLE && event.newVal!="") {
+                //Neither a TITLE nor a SUBTITLE node exists
+                query(".dijitDialogTitle", dijitDialogTitleBar)[0].innerHTML = "<span class='dialogSubtitle'>"+event.newVal+"</span>";            
+            }
+        }
+        var oldTitleState = this.titleState;
+        this.evalTitleState();
+        this.titleStateChange = (oldTitleState!=this.titleState);
+        this.updateTitleAttribute();
+        }
+}
